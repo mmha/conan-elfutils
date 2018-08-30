@@ -14,7 +14,7 @@ class ELFUtilsConan(ConanFile):
     homepage = "https://sourceware.org/elfutils"
     author = "Bincrafters <bincrafters@gmail.com>"
     license = "MIT"
-    exports = ["LICENSE.md"]
+    exports = ["LICENSE.md", "elfutils.patch"]
     settings = "os", "arch", "compiler", "build_type"
     options = {"fPIC": [True, False]}
     default_options = "fPIC=True"
@@ -37,6 +37,7 @@ class ELFUtilsConan(ConanFile):
         tools.get("{}/ftp/{}/{}-{}.tar.bz2".format(self.homepage, self.version, self.name, self.version))
         extracted_dir = self.name + "-" + self.version
         os.rename(extracted_dir, self.source_subfolder)
+        tools.patch(base_path=self.source_subfolder, patch_file='elfutils.patch')
 
     def configure_autotools(self):
         if not self.autotools:
@@ -45,14 +46,7 @@ class ELFUtilsConan(ConanFile):
             self.autotools.configure(configure_dir=self.source_subfolder, args=args)
         return self.autotools
 
-    def patch_warnings(self):
-        search = "$(if $($(*F)_no_Wunused),,-Wunused -Wextra)"
-        replace = "$(if $($(*F)_no_Wunused),,-Wno-unused -Wextra)"
-        for path in ["libdwfl", "src"]:
-            tools.replace_in_file(os.path.join(self.source_subfolder, path, "Makefile.in"), search=search, replace=replace)
-
     def build(self):
-        self.patch_warnings()
         autotools = self.configure_autotools()
         autotools.make()
 
